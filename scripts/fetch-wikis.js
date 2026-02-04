@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-// Fetch Wikimedia contributions across multiple wikis
+// Fetch contributions from Wikimedia wikis and other MediaWiki-based wikis
 // Output: TSV (id, platform, type, date, title, url, source)
 
 const WIKIS = [
+  // Wikimedia
   { id: 'commons', api: 'https://commons.wikimedia.org/w/api.php', name: 'Commons' },
   { id: 'wikidata', api: 'https://www.wikidata.org/w/api.php', name: 'Wikidata' },
   { id: 'enwiki', api: 'https://en.wikipedia.org/w/api.php', name: 'Wikipedia (en)' },
@@ -12,11 +13,17 @@ const WIKIS = [
   { id: 'enwiktionary', api: 'https://en.wiktionary.org/w/api.php', name: 'Wiktionary (en)' },
   { id: 'enwikisource', api: 'https://en.wikisource.org/w/api.php', name: 'Wikisource (en)' },
   { id: 'translatewiki', api: 'https://translatewiki.net/w/api.php', name: 'translatewiki.net' },
+
+  // Other wikis
+  { id: 'osmwiki', api: 'https://wiki.openstreetmap.org/w/api.php', name: 'OpenStreetMap Wiki', platform: 'osm-wiki', username: 'Waldyrious' },
+  { id: 'explainxkcd', api: 'https://www.explainxkcd.com/wiki/api.php', name: 'explain xkcd', platform: 'explainxkcd', username: 'Waldir', articleBase: 'https://www.explainxkcd.com/wiki/index.php' },
+  { id: 'fandom-community', api: 'https://community.fandom.com/api.php', name: 'Fandom (Community)', platform: 'fandom', username: 'Waldir' },
 ];
 
-const USERNAME = 'Waldyrious';
+const DEFAULT_USERNAME = 'Waldyrious';
 
-async function fetchContribs(wiki, username, limit = 50) {
+async function fetchContribs(wiki, limit = 50) {
+  const username = wiki.username || DEFAULT_USERNAME;
   const params = new URLSearchParams({
     action: 'query',
     list: 'usercontribs',
@@ -28,20 +35,28 @@ async function fetchContribs(wiki, username, limit = 50) {
   });
 
   const url = `${wiki.api}?${params}`;
-  console.error(`Fetching ${wiki.name}...`);
+  console.error(`Fetching ${wiki.name} as ${username}...`);
 
   try {
     const res = await fetch(url);
     const data = await res.json();
-    const baseUrl = wiki.api.replace('/w/api.php', '');
+
+    let articleUrlBase;
+    if (wiki.articleBase) {
+      articleUrlBase = wiki.articleBase;
+    } else {
+      let base = wiki.api.replace('/w/api.php', '').replace('/api.php', '');
+      if (base.endsWith('/')) base = base.slice(0, -1);
+      articleUrlBase = `${base}/wiki`;
+    }
 
     return (data.query?.usercontribs || []).map(edit => [
       `${wiki.id}-${edit.revid}`,
-      'wikimedia',
+      wiki.platform || 'wikimedia',
       'edit',
       edit.timestamp,
       edit.title,
-      `${baseUrl}/wiki/${encodeURIComponent(edit.title)}?oldid=${edit.revid}`,
+      `${articleUrlBase}/${encodeURIComponent(edit.title)}?oldid=${edit.revid}`,
       wiki.name,
     ]);
   } catch (err) {
@@ -58,7 +73,7 @@ async function main() {
   const rows = [];
 
   for (const wiki of WIKIS) {
-    const contribs = await fetchContribs(wiki, USERNAME);
+    const contribs = await fetchContribs(wiki);
     rows.push(...contribs);
     console.error(`  Got ${contribs.length} edits`);
   }

@@ -7,8 +7,8 @@ A static site showing my open contributions across GitHub, Wikimedia, and OpenSt
 ## Data sources
 
 - **GitHub**: commits, issues, PRs, reviews, comments
-- **Wikimedia**: edits across Commons, Wikidata, English/Portuguese Wikipedia, MediaWiki, Meta, Wiktionary, Wikisource, and Translatewiki.net
-- **OpenStreetMap**: changesets
+- **Wikis**: edits across Wikimedia wikis (Wikipedia, Wikidata, etc.) and other wikis (Translatewiki.net, Fandom, etc.)
+- **OpenStreetMap**: changesets, OSM wiki edits
 
 ## How it works
 
