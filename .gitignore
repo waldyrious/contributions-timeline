@@ -1,0 +1,8 @@
+# Data files are regenerated on each build
+data/*.tsv
+
+# Generated site
+site/
+
+# Node.js dependencies
+node_modules/
