@@ -32,7 +32,7 @@ function main() {
   all.sort((a, b) => new Date(b[3]) - new Date(a[3]));
 
   // Output TSV with header
-  console.log(['id', 'platform', 'type', 'date', 'title', 'url', 'source', 'icon'].join('\t'));
+  console.log(['id', 'ecosystem', 'type', 'date', 'title', 'url', 'source', 'icon'].join('\t'));
   for (const row of all) {
     console.log(row.join('\t'));
   }

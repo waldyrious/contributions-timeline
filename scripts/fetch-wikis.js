@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Fetch contributions from Wikimedia wikis and other MediaWiki-based wikis
-// Output: TSV (id, platform, type, date, title, url, source)
+// Output: TSV (id, ecosystem, type, date, title, url, source, icon)
 
 const WIKIS = [
   // Wikimedia
@@ -15,9 +15,9 @@ const WIKIS = [
   { id: 'translatewiki', api: 'https://translatewiki.net/w/api.php', name: 'translatewiki.net' },
 
   // Other wikis
-  { id: 'osmwiki', api: 'https://wiki.openstreetmap.org/w/api.php', name: 'OpenStreetMap Wiki', platform: 'osm-wiki', username: 'Waldyrious' },
-  { id: 'explainxkcd', api: 'https://www.explainxkcd.com/wiki/api.php', name: 'explain xkcd', platform: 'explainxkcd', username: 'Waldir', articleBase: 'https://www.explainxkcd.com/wiki/index.php' },
-  { id: 'fandom-community', api: 'https://community.fandom.com/api.php', name: 'Fandom (Community)', platform: 'fandom', username: 'Waldir' },
+  { id: 'osmwiki', api: 'https://wiki.openstreetmap.org/w/api.php', name: 'OpenStreetMap Wiki', ecosystem: 'osm', username: 'Waldyrious' },
+  { id: 'explainxkcd', api: 'https://www.explainxkcd.com/wiki/api.php', name: 'explain xkcd', ecosystem: 'explainxkcd', username: 'Waldir', articleBase: 'https://www.explainxkcd.com/wiki/index.php' },
+  { id: 'fandom-community', api: 'https://community.fandom.com/api.php', name: 'Fandom (Community)', ecosystem: 'fandom', username: 'Waldir' },
 ];
 
 const DEFAULT_USERNAME = 'Waldyrious';
@@ -55,7 +55,7 @@ async function fetchContribs(wiki, limit = 50) {
 
     return (data.query?.usercontribs || []).map(edit => [
       `${wiki.id}-${edit.revid}`,
-      wiki.platform || 'wikimedia',
+      wiki.ecosystem || 'wikimedia',
       'edit',
       edit.timestamp,
       edit.title,
@@ -86,7 +86,7 @@ async function main() {
   rows.sort((a, b) => new Date(b[3]) - new Date(a[3]));
 
   // Output TSV
-  console.log(['id', 'platform', 'type', 'date', 'title', 'url', 'source', 'icon'].join('\t'));
+  console.log(['id', 'ecosystem', 'type', 'date', 'title', 'url', 'source', 'icon'].join('\t'));
   for (const row of rows) {
     console.log(row.map(escapeField).join('\t'));
   }

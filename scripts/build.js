@@ -7,21 +7,21 @@ const path = require('path');
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const SITE_DIR = path.join(__dirname, '..', 'site');
 
-const PLATFORM_INFO = {
-  github: { icon: 'github.com', name: 'GitHub' },
-  wikimedia: { icon: 'wikipedia.org', name: 'Wikimedia' },
-  osm: { icon: 'openstreetmap.org', name: 'OpenStreetMap' },
-  'osm-wiki': { icon: 'openstreetmap.org', name: 'OpenStreetMap Wiki' },
-  explainxkcd: { icon: 'explainxkcd.com', name: 'explain xkcd' },
-  fandom: { icon: 'fandom.com', name: 'Fandom' },
+// Fallback icons by ecosystem (used when contrib.icon is not set)
+const ECOSYSTEM_ICONS = {
+  github: 'github.com',
+  wikimedia: 'wikipedia.org',
+  osm: 'openstreetmap.org',
+  explainxkcd: 'explainxkcd.com',
+  fandom: 'fandom.com',
 };
 
 const ECOSYSTEMS = {
-  wikimedia: { label: 'Wikimedia', platforms: ['wikimedia'] },
-  osm: { label: 'OpenStreetMap', platforms: ['osm', 'osm-wiki'] },
-  github: { label: 'GitHub', platforms: ['github'] },
-  explainxkcd: { label: 'explain xkcd', platforms: ['explainxkcd'] },
-  fandom: { label: 'Fandom', platforms: ['fandom'] },
+  wikimedia: { label: 'Wikimedia' },
+  osm: { label: 'OpenStreetMap' },
+  github: { label: 'GitHub' },
+  explainxkcd: { label: 'explain xkcd' },
+  fandom: { label: 'Fandom' },
 };
 
 const TYPES = {
@@ -65,52 +65,41 @@ function loadTSV(filename) {
   });
 }
 
-function classify(contrib) {
-  let ecosystem = 'other';
-  let type = 'other';
-
-  // Determine Ecosystem
-  if (contrib.platform === 'github') ecosystem = 'github';
-  else if (contrib.platform === 'wikimedia') ecosystem = 'wikimedia';
-  else if (['osm', 'osm-wiki'].includes(contrib.platform)) ecosystem = 'osm';
-  else if (contrib.platform === 'explainxkcd') ecosystem = 'explainxkcd';
-  else if (contrib.platform === 'fandom') ecosystem = 'fandom';
-
-  // Determine Type
+function classifyType(contrib) {
   const title = contrib.title || '';
   const isTalk = /([ _]|^)[Tt]alk:/.test(title);
 
-  if (contrib.platform === 'osm' && contrib.type === 'changeset') {
-    type = 'map';
+  if (contrib.type === 'changeset') {
+    return 'map';
   } else if (isTalk) {
-    type = 'talk';
+    return 'talk';
   } else if (contrib.source === 'translatewiki.net') {
-    type = 'i18n';
+    return 'i18n';
   } else if (['edit'].includes(contrib.type)) {
-    type = 'wiki';
+    return 'wiki';
   } else if (['commit', 'pr', 'repo'].includes(contrib.type)) {
-    type = 'code';
+    return 'code';
   } else if (['review', 'issue', 'comment'].includes(contrib.type)) {
-    type = 'talk';
-  } else if (contrib.platform === 'github') {
+    return 'talk';
+  } else if (contrib.ecosystem === 'github') {
     // Fallback for other GitHub events not explicitly handled
-    type = 'code';
+    return 'code';
   }
 
-  return { ecosystem, type };
+  return 'other';
 }
 
 function renderContribution(contrib) {
-  const { ecosystem, type } = classify(contrib);
-  const platform = PLATFORM_INFO[contrib.platform];
-  // Use contrib-specific icon if available, otherwise fall back to platform default
-  const iconDomain = contrib.icon || platform?.icon || 'example.com';
+  const ecosystem = contrib.ecosystem || 'other';
+  const type = classifyType(contrib);
+  // Use contrib-specific icon if available, otherwise fall back to ecosystem default
+  const iconDomain = contrib.icon || ECOSYSTEM_ICONS[ecosystem] || 'example.com';
   const iconUrl = `https://icons.duckduckgo.com/ip3/${iconDomain}.ico`;
   const title = escapeHtml(contrib.title);
   const date = formatDate(contrib.date);
   const source = escapeHtml(contrib.source);
 
-  return `<li data-platform="${contrib.platform}" data-ecosystem="${ecosystem}" data-type="${type}">
+  return `<li data-ecosystem="${ecosystem}" data-type="${type}">
     <time datetime="${contrib.date}">${date}</time>
     <img class="icon" src="${iconUrl}" alt="" width="16" height="16" />
     <a href="${escapeHtml(contrib.url)}" target="_blank" rel="noopener">${title}</a>
@@ -128,7 +117,8 @@ function generateHTML(contributions) {
     if (!byYear[year]) byYear[year] = [];
     byYear[year].push(c);
 
-    const { ecosystem, type } = classify(c);
+    const ecosystem = c.ecosystem || 'other';
+    const type = classifyType(c);
     counts.ecosystem[ecosystem] = (counts.ecosystem[ecosystem] || 0) + 1;
     counts.type[type] = (counts.type[type] || 0) + 1;
   }

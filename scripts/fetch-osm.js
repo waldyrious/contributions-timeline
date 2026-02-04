@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Fetch OpenStreetMap contributions
-// Output: TSV (id, platform, type, date, title, url, source)
+// Output: TSV (id, ecosystem, type, date, title, url, source)
 
 const USERNAME = 'waldyrious';
 
@@ -41,7 +41,7 @@ async function main() {
   rows.sort((a, b) => new Date(b[3]) - new Date(a[3]));
   
   // Output TSV
-  console.log(['id', 'platform', 'type', 'date', 'title', 'url', 'source'].join('\t'));
+  console.log(['id', 'ecosystem', 'type', 'date', 'title', 'url', 'source'].join('\t'));
   for (const row of rows) {
     console.log(row.map(escapeField).join('\t'));
   }
