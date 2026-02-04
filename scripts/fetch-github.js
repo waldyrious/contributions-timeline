@@ -22,11 +22,22 @@ async function graphql(query, variables = {}) {
     body: JSON.stringify({ query, variables }),
   });
 
-  const data = await res.json();
-  if (data.errors) {
-    console.error('GraphQL errors:', JSON.stringify(data.errors, null, 2));
+  if (!res.ok) {
+    console.error(`GraphQL request failed: ${res.status} ${res.statusText}`);
+    return { data: null };
   }
-  return data;
+
+  const text = await res.text();
+  try {
+    const data = JSON.parse(text);
+    if (data.errors) {
+      console.error('GraphQL errors:', JSON.stringify(data.errors, null, 2));
+    }
+    return data;
+  } catch (e) {
+    console.error('Failed to parse GraphQL response:', text.slice(0, 200));
+    return { data: null };
+  }
 }
 
 async function fetchPullRequests(username, limit = 100) {
@@ -235,43 +246,76 @@ async function fetchIssueComments(username, limit = 100) {
   return rows;
 }
 
-async function fetchCommits(username, limit = 30) {
-  console.error('Fetching recent commits via Events API...');
-  // GraphQL doesn't easily expose all commits across repos
-  // Use REST Events API for recent commits (it's good enough for this)
+async function fetchCommits(username, limit = 10) {
+  console.error('Fetching recent commits...');
+  
   const rows = [];
   
-  for (let page = 1; page <= 3; page++) {
-    const url = `https://api.github.com/users/${username}/events/public?per_page=100&page=${page}`;
-    const res = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${TOKEN}`,
-        'User-Agent': 'contributions-timeline',
-      },
-    });
-    
-    if (!res.ok) break;
-    const events = await res.json();
-    if (events.length === 0) break;
-
-    for (const event of events) {
-      if (event.type === 'PushEvent') {
-        for (const commit of event.payload.commits || []) {
-          rows.push([
-            `github-commit-${commit.sha.slice(0, 7)}`,
-            'github',
-            'commit',
-            event.created_at,
-            commit.message.split('\n')[0],
-            `https://github.com/${event.repo.name}/commit/${commit.sha}`,
-            event.repo.name,
-          ]);
+  // Get recently pushed repos first
+  const repoQuery = `
+    query($username: String!) {
+      user(login: $username) {
+        id
+        repositories(first: 10, ownerAffiliations: OWNER, orderBy: {field: PUSHED_AT, direction: DESC}) {
+          nodes { nameWithOwner }
         }
       }
     }
-    console.error(`  Page ${page}: ${events.length} events`);
+  `;
+  
+  const repoData = await graphql(repoQuery, { username });
+  const userId = repoData.data?.user?.id;
+  const repoNames = repoData.data?.user?.repositories?.nodes?.map(r => r.nameWithOwner) || [];
+  
+  if (!userId || repoNames.length === 0) {
+    console.error('  Could not get user data');
+    return [];
   }
   
+  // Fetch commits from each repo individually (more reliable)
+  for (const repoFullName of repoNames.slice(0, 5)) { // Limit to 5 repos
+    const [owner, name] = repoFullName.split('/');
+    const commitQuery = `
+      query($owner: String!, $name: String!, $authorId: ID!, $limit: Int!) {
+        repository(owner: $owner, name: $name) {
+          defaultBranchRef {
+            target {
+              ... on Commit {
+                history(first: $limit, author: {id: $authorId}) {
+                  nodes {
+                    oid
+                    message
+                    committedDate
+                    url
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+    
+    const data = await graphql(commitQuery, { owner, name, authorId: userId, limit });
+    const commits = data.data?.repository?.defaultBranchRef?.target?.history?.nodes || [];
+    
+    for (const commit of commits) {
+      rows.push([
+        `github-commit-${commit.oid.slice(0, 7)}`,
+        'github',
+        'commit',
+        commit.committedDate,
+        commit.message.split('\n')[0],
+        commit.url,
+        repoFullName,
+      ]);
+    }
+    
+    if (commits.length > 0) {
+      console.error(`  ${repoFullName}: ${commits.length} commits`);
+    }
+  }
+
   console.error(`  Total: ${rows.length} commits`);
   return rows;
 }
@@ -330,14 +374,13 @@ function escapeField(str) {
 }
 
 async function main() {
-  const [prs, issues, reviews, comments, commits, repos] = await Promise.all([
-    fetchPullRequests(USERNAME),
-    fetchIssues(USERNAME),
-    fetchPullRequestReviews(USERNAME),
-    fetchIssueComments(USERNAME),
-    fetchCommits(USERNAME),
-    fetchRepositoriesCreated(USERNAME),
-  ]);
+  // Run sequentially to avoid rate limits
+  const prs = await fetchPullRequests(USERNAME);
+  const issues = await fetchIssues(USERNAME);
+  const reviews = await fetchPullRequestReviews(USERNAME);
+  const comments = await fetchIssueComments(USERNAME);
+  const commits = await fetchCommits(USERNAME);
+  const repos = await fetchRepositoriesCreated(USERNAME);
 
   const rows = [...prs, ...issues, ...reviews, ...comments, ...commits, ...repos];
 
