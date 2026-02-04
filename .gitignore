@@ -2,7 +2,7 @@
 data/*.tsv
 
 # Generated site
-site/
+site/index.xhtml
 
 # Node.js dependencies
 node_modules/
