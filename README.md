@@ -12,10 +12,9 @@ A static site showing my open contributions across GitHub, Wikimedia, and OpenSt
 
 ## How it works
 
-1. Node.js scripts fetch data from each platform's API
-2. Data is merged into a unified timeline
-3. Static HTML (with CSS-only interactivity) is generated
-4. GitHub Actions runs the scripts daily and publishes to GitHub Pages
+1. Node.js scripts fetch data from each platform's API and combime them into a unified timeline
+2. Another script transforms the raw data into a static HTML page (with togglable filters)
+3. A GitHub Actions workflow runs these scripts daily and publishes the result via GitHub Pages
 
 ## Running the project locally
 
