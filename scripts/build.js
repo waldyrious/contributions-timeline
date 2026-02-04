@@ -103,7 +103,9 @@ function classify(contrib) {
 function renderContribution(contrib) {
   const { ecosystem, type } = classify(contrib);
   const platform = PLATFORM_INFO[contrib.platform];
-  const iconUrl = `https://icons.duckduckgo.com/ip3/${platform?.icon || 'example.com'}.ico`;
+  // Use contrib-specific icon if available, otherwise fall back to platform default
+  const iconDomain = contrib.icon || platform?.icon || 'example.com';
+  const iconUrl = `https://icons.duckduckgo.com/ip3/${iconDomain}.ico`;
   const title = escapeHtml(contrib.title);
   const date = formatDate(contrib.date);
   const source = escapeHtml(contrib.source);

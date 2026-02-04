@@ -50,6 +50,9 @@ async function fetchContribs(wiki, limit = 50) {
       articleUrlBase = `${base}/wiki`;
     }
 
+    // Extract domain from API URL for favicon
+    const iconDomain = new URL(wiki.api).hostname;
+
     return (data.query?.usercontribs || []).map(edit => [
       `${wiki.id}-${edit.revid}`,
       wiki.platform || 'wikimedia',
@@ -58,6 +61,7 @@ async function fetchContribs(wiki, limit = 50) {
       edit.title,
       `${articleUrlBase}/${encodeURIComponent(edit.title)}?oldid=${edit.revid}`,
       wiki.name,
+      iconDomain,
     ]);
   } catch (err) {
     console.error(`Error fetching ${wiki.name}: ${err.message}`);
@@ -82,7 +86,7 @@ async function main() {
   rows.sort((a, b) => new Date(b[3]) - new Date(a[3]));
 
   // Output TSV
-  console.log(['id', 'platform', 'type', 'date', 'title', 'url', 'source'].join('\t'));
+  console.log(['id', 'platform', 'type', 'date', 'title', 'url', 'source', 'icon'].join('\t'));
   for (const row of rows) {
     console.log(row.map(escapeField).join('\t'));
   }
