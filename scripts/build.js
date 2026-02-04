@@ -11,6 +11,25 @@ const PLATFORM_INFO = {
   github: { icon: 'github.com', name: 'GitHub' },
   wikimedia: { icon: 'wikipedia.org', name: 'Wikimedia' },
   osm: { icon: 'openstreetmap.org', name: 'OpenStreetMap' },
+  'osm-wiki': { icon: 'openstreetmap.org', name: 'OpenStreetMap Wiki' },
+  explainxkcd: { icon: 'explainxkcd.com', name: 'explain xkcd' },
+  fandom: { icon: 'fandom.com', name: 'Fandom' },
+};
+
+const ECOSYSTEMS = {
+  wikimedia: { label: 'Wikimedia', platforms: ['wikimedia'] },
+  osm: { label: 'OpenStreetMap', platforms: ['osm', 'osm-wiki'] },
+  github: { label: 'GitHub', platforms: ['github'] },
+  explainxkcd: { label: 'explain xkcd', platforms: ['explainxkcd'] },
+  fandom: { label: 'Fandom', platforms: ['fandom'] },
+};
+
+const TYPES = {
+  wiki: { label: 'Wiki edits' },
+  code: { label: 'Code' },
+  talk: { label: 'Discussion' },
+  map: { label: 'Map edits' },
+  i18n: { label: 'Translation' },
 };
 
 function escapeHtml(str) {
@@ -46,14 +65,50 @@ function loadTSV(filename) {
   });
 }
 
+function classify(contrib) {
+  let ecosystem = 'other';
+  let type = 'other';
+
+  // Determine Ecosystem
+  if (contrib.platform === 'github') ecosystem = 'github';
+  else if (contrib.platform === 'wikimedia') ecosystem = 'wikimedia';
+  else if (['osm', 'osm-wiki'].includes(contrib.platform)) ecosystem = 'osm';
+  else if (contrib.platform === 'explainxkcd') ecosystem = 'explainxkcd';
+  else if (contrib.platform === 'fandom') ecosystem = 'fandom';
+
+  // Determine Type
+  const title = contrib.title || '';
+  const isTalk = /([ _]|^)[Tt]alk:/.test(title);
+
+  if (contrib.platform === 'osm' && contrib.type === 'changeset') {
+    type = 'map';
+  } else if (isTalk) {
+    type = 'talk';
+  } else if (contrib.source === 'translatewiki.net') {
+    type = 'i18n';
+  } else if (['edit'].includes(contrib.type)) {
+    type = 'wiki';
+  } else if (['commit', 'pr', 'repo'].includes(contrib.type)) {
+    type = 'code';
+  } else if (['review', 'issue', 'comment'].includes(contrib.type)) {
+    type = 'talk';
+  } else if (contrib.platform === 'github') {
+    // Fallback for other GitHub events not explicitly handled
+    type = 'code';
+  }
+
+  return { ecosystem, type };
+}
+
 function renderContribution(contrib) {
+  const { ecosystem, type } = classify(contrib);
   const platform = PLATFORM_INFO[contrib.platform];
   const iconUrl = `https://icons.duckduckgo.com/ip3/${platform?.icon || 'example.com'}.ico`;
   const title = escapeHtml(contrib.title);
   const date = formatDate(contrib.date);
   const source = escapeHtml(contrib.source);
 
-  return `<li data-platform="${contrib.platform}">
+  return `<li data-platform="${contrib.platform}" data-ecosystem="${ecosystem}" data-type="${type}">
     <time datetime="${contrib.date}">${date}</time>
     <img class="icon" src="${iconUrl}" alt="" width="16" height="16" />
     <a href="${escapeHtml(contrib.url)}" target="_blank" rel="noopener">${title}</a>
@@ -64,24 +119,27 @@ function renderContribution(contrib) {
 function generateHTML(contributions) {
   // Group by year
   const byYear = {};
-  const counts = { github: 0, wikimedia: 0, osm: 0 };
+  const counts = { ecosystem: {}, type: {} };
 
   for (const c of contributions) {
     const year = new Date(c.date).getFullYear();
     if (!byYear[year]) byYear[year] = [];
     byYear[year].push(c);
-    counts[c.platform] = (counts[c.platform] || 0) + 1;
+
+    const { ecosystem, type } = classify(c);
+    counts.ecosystem[ecosystem] = (counts.ecosystem[ecosystem] || 0) + 1;
+    counts.type[type] = (counts.type[type] || 0) + 1;
   }
 
   const years = Object.keys(byYear).sort((a, b) => b - a);
 
-  // Generate year navigation
-  const yearNav = years.map(y => `<a href="#year-${y}">${y}</a>`).join(' ');
+  // Generate filters
+  const ecosystemFilters = Object.entries(ECOSYSTEMS).map(([id, info]) => {
+    return `<label><input type="checkbox" name="ecosystem" value="${id}" checked="checked" /> ${info.label}</label>`;
+  }).join('\n        ');
 
-  // Generate filter checkboxes
-  const platformFilters = Object.entries(PLATFORM_INFO).map(([id, info]) => {
-    const iconUrl = `https://icons.duckduckgo.com/ip3/${info.icon}.ico`;
-    return `<label><input type="checkbox" name="platform" value="${id}" checked="checked" /> <img src="${iconUrl}" alt="" width="16" height="16" /> ${info.name}</label>`;
+  const typeFilters = Object.entries(TYPES).map(([id, info]) => {
+    return `<label><input type="checkbox" name="type" value="${id}" checked="checked" /> ${info.label}</label>`;
   }).join('\n        ');
 
   // Generate year sections
@@ -94,6 +152,10 @@ function generateHTML(contributions) {
     </ul>
   </section>`;
   }).join('\n\n  ');
+
+  // Generate footer counts
+  const ecoCounts = Object.entries(ECOSYSTEMS).map(([id, info]) => `${counts.ecosystem[id] || 0} ${info.label}`).join(', ');
+  const typeCounts = Object.entries(TYPES).map(([id, info]) => `${counts.type[id] || 0} ${info.label}`).join(', ');
 
   const generated = new Date().toISOString();
 
@@ -110,14 +172,23 @@ function generateHTML(contributions) {
     <h1>Waldir's Open Contributions</h1>
     <p class="subtitle">Small contributions add up over time.</p>
 
-    <div class="filters">
-      <strong>Show:</strong>
-      ${platformFilters}
+    <div class="filter-group">
+      <strong>Ecosystem:</strong>
+      <div class="filters">
+        ${ecosystemFilters}
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <strong>Type:</strong>
+      <div class="filters">
+        ${typeFilters}
+      </div>
     </div>
 
     <nav class="year-nav">
       <strong>Jump to:</strong>
-      ${yearNav}
+      ${years.map(y => `<a href="#year-${y}">${y}</a>`).join(' ')}
     </nav>
   </header>
 
@@ -126,10 +197,9 @@ function generateHTML(contributions) {
   </main>
 
   <footer>
-    <p>Total: ${contributions.length} contributions
-       (${counts.github} GitHub,
-        ${counts.wikimedia} Wikimedia,
-        ${counts.osm} OSM)</p>
+    <p>Total: ${contributions.length} contributions</p>
+    <p>By Ecosystem: ${ecoCounts}</p>
+    <p>By Type: ${typeCounts}</p>
     <p>Last updated: ${new Date(generated).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
     <p><a href="https://github.com/waldyrious/contributions-timeline">Source code</a></p>
   </footer>
