@@ -1,9 +1,13 @@
 .DEFAULT_GOAL := site/index.xhtml
 
-# Fetch GitHub data
+# Fetch GitHub data (load .env if it exists)
 data/github.tsv: scripts/fetch-github.js
 	@echo "Fetching GitHub data..."
-	node scripts/fetch-github.js > data/github.tsv
+	@if [ -f .env ]; then \
+		node --env-file=.env scripts/fetch-github.js > data/github.tsv; \
+	else \
+		node scripts/fetch-github.js > data/github.tsv; \
+	fi
 
 # Fetch data from MediaWiki-based wikis (Wikimedia, OSM Wiki, Fandom, etc.)
 data/wikis.tsv: scripts/fetch-wikis.js
