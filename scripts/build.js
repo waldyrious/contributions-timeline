@@ -9,7 +9,7 @@ const SITE_DIR = path.join(__dirname, '..', 'site');
 
 const PLATFORM_INFO = {
   github: { icon: 'github.com', name: 'GitHub' },
-  wikipedia: { icon: 'wikipedia.org', name: 'Wikipedia' },
+  wikimedia: { icon: 'wikipedia.org', name: 'Wikimedia' },
   osm: { icon: 'openstreetmap.org', name: 'OpenStreetMap' },
 };
 
@@ -64,7 +64,7 @@ function renderContribution(contrib) {
 function generateHTML(contributions) {
   // Group by year
   const byYear = {};
-  const counts = { github: 0, wikipedia: 0, osm: 0 };
+  const counts = { github: 0, wikimedia: 0, osm: 0 };
 
   for (const c of contributions) {
     const year = new Date(c.date).getFullYear();
@@ -128,7 +128,7 @@ function generateHTML(contributions) {
   <footer>
     <p>Total: ${contributions.length} contributions
        (${counts.github} GitHub,
-        ${counts.wikipedia} Wikipedia,
+        ${counts.wikimedia} Wikimedia,
         ${counts.osm} OSM)</p>
     <p>Last updated: ${new Date(generated).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
     <p><a href="https://github.com/waldyrious/contributions-timeline">Source code</a></p>
