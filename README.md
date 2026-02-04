@@ -17,21 +17,10 @@ A static site showing my open contributions across GitHub, Wikimedia, and OpenSt
 3. Static HTML (with CSS-only interactivity) is generated
 4. GitHub Actions runs the scripts daily and publishes to GitHub Pages
 
-## Local development
+## Running the project locally
 
-```bash
-# Fetch fresh data
-node scripts/fetch-github.js > data/github.json
-node scripts/fetch-wikimedia.js > data/wikimedia.json
-node scripts/fetch-osm.js > data/osm.json
-
-# Merge and build
-node scripts/merge.js > data/timeline.json
-node scripts/build.js
-
-# Preview
-cd site && python3 -m http.server 8000
-```
+1. Run `make` to fetch fresh data and build the site.
+2. Open the resulting `site/index.xhtml` file in a browser.
 
 ## Limitations
 
