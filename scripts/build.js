@@ -25,11 +25,11 @@ const ECOSYSTEMS = {
 };
 
 const TYPES = {
-  wiki: { label: 'Wiki edits' },
-  code: { label: 'Code' },
-  talk: { label: 'Discussion' },
-  map: { label: 'Map edits' },
-  i18n: { label: 'Translation' },
+  wiki: { label: 'Wiki edits', icon: '✏️' },
+  code: { label: 'Code', icon: '🖥️' },
+  talk: { label: 'Discussion', icon: '💬' },
+  map: { label: 'Map edits', icon: '🌎️' },
+  i18n: { label: 'Translation', icon: '🔠' },
 };
 
 function escapeHtml(str) {
@@ -92,6 +92,7 @@ function classifyType(contrib) {
 function renderContribution(contrib) {
   const ecosystem = contrib.ecosystem || 'other';
   const type = classifyType(contrib);
+  const typeInfo = TYPES[type] || { icon: '❓' };
   // Use contrib-specific icon if available, otherwise fall back to ecosystem default
   const iconDomain = contrib.icon || ECOSYSTEM_ICONS[ecosystem] || 'example.com';
   const iconUrl = `https://icons.duckduckgo.com/ip3/${iconDomain}.ico`;
@@ -99,12 +100,11 @@ function renderContribution(contrib) {
   const date = formatDate(contrib.date);
   const project = escapeHtml(contrib.project);
 
-  return `<li data-ecosystem="${ecosystem}" data-type="${type}">
-    <time datetime="${contrib.date}">${date}</time>
-    <img class="icon" src="${iconUrl}" alt="" width="16" height="16" />
-    <a href="${escapeHtml(contrib.url)}" target="_blank" rel="noopener">${title}</a>
-    <small class="project">${project}</small>
-  </li>`;
+  return `<tr data-ecosystem="${ecosystem}" data-type="${type}">
+    <td class="date"><time datetime="${contrib.date}">${date}</time></td>
+    <td class="project"><img class="icon" src="${iconUrl}" alt="" width="16" height="16" />${project}</td>
+    <td class="contribution"><span class="type-icon">${typeInfo.icon}</span><a href="${escapeHtml(contrib.url)}" target="_blank" rel="noopener">${title}</a></td>
+  </tr>`;
 }
 
 function generateHTML(contributions) {
@@ -125,25 +125,25 @@ function generateHTML(contributions) {
 
   const years = Object.keys(byYear).sort((a, b) => b - a);
 
-  // Generate filters
+  // Generate filters as table cells
   const ecosystemFilters = Object.entries(ECOSYSTEMS).map(([id, info]) => {
-    return `<label><input type="checkbox" name="ecosystem" value="${id}" checked="checked" /> ${info.label}</label>`;
-  }).join('\n        ');
+    return `<td><label><input type="checkbox" name="ecosystem" value="${id}" checked="checked" /> ${info.label}</label></td>`;
+  }).join('\n          ');
 
   const typeFilters = Object.entries(TYPES).map(([id, info]) => {
-    return `<label><input type="checkbox" name="type" value="${id}" checked="checked" /> ${info.label}</label>`;
-  }).join('\n        ');
+    return `<td data-type="${id}"><label><input type="checkbox" name="type" value="${id}" checked="checked" /> <span class="type-icon">${info.icon}</span> ${info.label}</label></td>`;
+  }).join('\n          ');
 
-  // Generate year sections
+  // Generate year sections as table row groups
   const yearSections = years.map(year => {
-    const items = byYear[year].map(renderContribution).join('\n      ');
-    return `<section id="year-${year}">
-    <h2>${year} <small>(${byYear[year].length})</small></h2>
-    <ul class="timeline">
-      ${items}
-    </ul>
-  </section>`;
-  }).join('\n\n  ');
+    const rows = byYear[year].map(renderContribution).join('\n        ');
+    return `<tbody id="year-${year}">
+        <tr class="year-header">
+          <th colspan="3">${year} <small>(${byYear[year].length})</small></th>
+        </tr>
+        ${rows}
+      </tbody>`;
+  }).join('\n      ');
 
   // Generate footer counts
   const ecoCounts = Object.entries(ECOSYSTEMS).map(([id, info]) => `${counts.ecosystem[id] || 0} ${info.label}`).join(', ');
@@ -166,16 +166,20 @@ function generateHTML(contributions) {
 
     <div class="filter-group">
       <strong>Ecosystem:</strong>
-      <div class="filters">
-        ${ecosystemFilters}
-      </div>
+      <table class="filters">
+        <tr>
+          ${ecosystemFilters}
+        </tr>
+      </table>
     </div>
 
     <div class="filter-group">
       <strong>Type:</strong>
-      <div class="filters">
-        ${typeFilters}
-      </div>
+      <table class="filters filters-type">
+        <tr>
+          ${typeFilters}
+        </tr>
+      </table>
     </div>
 
     <nav class="year-nav">
@@ -185,7 +189,9 @@ function generateHTML(contributions) {
   </header>
 
   <main>
-  ${yearSections}
+    <table class="timeline">
+      ${yearSections}
+    </table>
   </main>
 
   <footer>
