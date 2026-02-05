@@ -103,30 +103,28 @@ h1 {
 .filters-type td[data-type="map"] { background-color: var(--type-map); }
 .filters-type td[data-type="i18n"] { background-color: var(--type-i18n); }
 
-.year-nav {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  margin-top: 1.5rem;
-}
-
-.year-nav a {
-  padding: 0.25rem 0.5rem;
-  background: var(--shaded);
-  border-radius: 4px;
+.nav-arrow {
   text-decoration: none;
-  color: var(--fg);
-  font-size: 0.9em;
+  color: var(--link);
+  padding: 0 0.25rem;
 }
 
-.year-nav a:hover {
-  background: var(--link);
-  color: white;
+.nav-arrow.disabled {
+  opacity: 0.3;
 }
 
-.timeline .year-header th {
+.nav-top {
+  font-size: 0.7em;
+  text-decoration: none;
+  color: var(--muted);
+  margin-left: 0.5rem;
+}
+
+.nav-top:hover {
+  color: var(--link);
+}
+
+.timeline .month-header th {
   padding: 1.5rem 0.75rem 0.75rem;
   font-size: 1.25em;
   text-align: center;
@@ -134,7 +132,7 @@ h1 {
   background: var(--bg);
 }
 
-.timeline .year-header small {
+.timeline .month-header small {
   color: var(--muted);
   font-weight: normal;
 }

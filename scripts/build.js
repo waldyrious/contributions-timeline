@@ -40,12 +40,42 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
-function formatDate(isoDate) {
+function getISOWeek(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+  const yearStart = new Date(d.getFullYear(), 0, 1);
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
+function formatWeek(isoDate) {
   const d = new Date(isoDate);
-  const day = d.getDate().toString().padStart(2, '0');
-  const month = d.toLocaleDateString('en-US', { month: 'short' });
+  const week = getISOWeek(d).toString().padStart(2, '0');
   const year = d.getFullYear();
-  return `${day} ${month} ${year}`;
+  return `W${week} ${year}`;
+}
+
+function formatFullTimestamp(isoDate) {
+  const d = new Date(isoDate);
+  const year = d.getFullYear();
+  const month = (d.getMonth() + 1).toString().padStart(2, '0');
+  const day = d.getDate().toString().padStart(2, '0');
+  const hours = d.getHours().toString().padStart(2, '0');
+  const mins = d.getMinutes().toString().padStart(2, '0');
+  const secs = d.getSeconds().toString().padStart(2, '0');
+  return `${year}-${month}-${day} ${hours}:${mins}:${secs}`;
+}
+
+function getMonthKey(isoDate) {
+  const d = new Date(isoDate);
+  return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+}
+
+function formatMonthHeader(monthKey) {
+  const [year, month] = monthKey.split('-');
+  const d = new Date(parseInt(year), parseInt(month) - 1, 1);
+  const monthName = d.toLocaleDateString('en-US', { month: 'short' });
+  return `${monthName} ${year}`;
 }
 
 function loadTSV(filename) {
@@ -97,25 +127,31 @@ function renderContribution(contrib) {
   const iconDomain = contrib.icon || ECOSYSTEM_ICONS[ecosystem] || 'example.com';
   const iconUrl = `https://icons.duckduckgo.com/ip3/${iconDomain}.ico`;
   const title = escapeHtml(contrib.title);
-  const date = formatDate(contrib.date);
+  const dateDisplay = formatWeek(contrib.date);
+  const fullTimestamp = formatFullTimestamp(contrib.date);
   const project = escapeHtml(contrib.project);
 
   return `<tr data-ecosystem="${ecosystem}" data-type="${type}">
-    <td class="date"><time datetime="${contrib.date}">${date}</time></td>
+    <td class="date"><time datetime="${contrib.date}" title="${fullTimestamp}">${dateDisplay}</time></td>
     <td class="project"><img class="icon" src="${iconUrl}" alt="" width="16" height="16" />${project}</td>
     <td class="contribution"><span class="type-icon">${typeInfo.icon}</span><a href="${escapeHtml(contrib.url)}" target="_blank" rel="noopener">${title}</a></td>
   </tr>`;
 }
 
 function generateHTML(contributions) {
-  // Group by year
-  const byYear = {};
+  // Filter to last 3 years
+  const threeYearsAgo = new Date();
+  threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
+  const recentContribs = contributions.filter(c => new Date(c.date) >= threeYearsAgo);
+
+  // Group by month
+  const byMonth = {};
   const counts = { ecosystem: {}, type: {} };
 
-  for (const c of contributions) {
-    const year = new Date(c.date).getFullYear();
-    if (!byYear[year]) byYear[year] = [];
-    byYear[year].push(c);
+  for (const c of recentContribs) {
+    const monthKey = getMonthKey(c.date);
+    if (!byMonth[monthKey]) byMonth[monthKey] = [];
+    byMonth[monthKey].push(c);
 
     const ecosystem = c.ecosystem || 'other';
     const type = classifyType(c);
@@ -123,7 +159,7 @@ function generateHTML(contributions) {
     counts.type[type] = (counts.type[type] || 0) + 1;
   }
 
-  const years = Object.keys(byYear).sort((a, b) => b - a);
+  const months = Object.keys(byMonth).sort((a, b) => b.localeCompare(a));
 
   // Generate filters as table cells
   const ecosystemFilters = Object.entries(ECOSYSTEMS).map(([id, info]) => {
@@ -134,12 +170,17 @@ function generateHTML(contributions) {
     return `<td data-type="${id}"><label><input type="checkbox" name="type" value="${id}" checked="checked" /> <span class="type-icon">${info.icon}</span> ${info.label}</label></td>`;
   }).join('\n          ');
 
-  // Generate year sections as table row groups
-  const yearSections = years.map(year => {
-    const rows = byYear[year].map(renderContribution).join('\n        ');
-    return `<tbody id="year-${year}">
-        <tr class="year-header">
-          <th colspan="3">${year} <small>(${byYear[year].length})</small></th>
+  // Generate month sections as table row groups
+  const monthSections = months.map((monthKey, index) => {
+    const rows = byMonth[monthKey].map(renderContribution).join('\n        ');
+    const header = formatMonthHeader(monthKey);
+    const prevMonth = index > 0 ? months[index - 1] : null;
+    const nextMonth = index < months.length - 1 ? months[index + 1] : null;
+    const upLink = prevMonth ? `<a href="#month-${prevMonth}" class="nav-arrow" title="Previous month">↑</a>` : `<span class="nav-arrow disabled">↑</span>`;
+    const downLink = nextMonth ? `<a href="#month-${nextMonth}" class="nav-arrow" title="Next month">↓</a>` : `<span class="nav-arrow disabled">↓</span>`;
+    return `<tbody id="month-${monthKey}">
+        <tr class="month-header">
+          <th colspan="3">${upLink} ${header} <small>(${byMonth[monthKey].length})</small> ${downLink} <a href="#" class="nav-top">top</a></th>
         </tr>
         ${rows}
       </tbody>`;
@@ -182,20 +223,16 @@ function generateHTML(contributions) {
       </table>
     </div>
 
-    <nav class="year-nav">
-      <strong>Jump to:</strong>
-      ${years.map(y => `<a href="#year-${y}">${y}</a>`).join(' ')}
-    </nav>
   </header>
 
   <main>
     <table class="timeline">
-      ${yearSections}
+      ${monthSections}
     </table>
   </main>
 
   <footer>
-    <p>Total: ${contributions.length} contributions</p>
+    <p>Total: ${recentContribs.length} contributions (last 3 years)</p>
     <p>By Ecosystem: ${ecoCounts}</p>
     <p>By Type: ${typeCounts}</p>
     <p>Last updated: ${new Date(generated).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
