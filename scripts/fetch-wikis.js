@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Fetch contributions from Wikimedia wikis and other MediaWiki-based wikis
-// Output: TSV (id, ecosystem, type, date, title, url, source, icon)
+// Output: TSV (id, ecosystem, type, date, title, url, project, icon)
 
 const WIKIS = [
   // Wikimedia
@@ -86,7 +86,7 @@ async function main() {
   rows.sort((a, b) => new Date(b[3]) - new Date(a[3]));
 
   // Output TSV
-  console.log(['id', 'ecosystem', 'type', 'date', 'title', 'url', 'source', 'icon'].join('\t'));
+  console.log(['id', 'ecosystem', 'type', 'date', 'title', 'url', 'project', 'icon'].join('\t'));
   for (const row of rows) {
     console.log(row.map(escapeField).join('\t'));
   }

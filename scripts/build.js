@@ -73,7 +73,7 @@ function classifyType(contrib) {
     return 'map';
   } else if (isTalk) {
     return 'talk';
-  } else if (contrib.source === 'translatewiki.net') {
+  } else if (contrib.project === 'translatewiki.net') {
     return 'i18n';
   } else if (['edit'].includes(contrib.type)) {
     return 'wiki';
@@ -97,13 +97,13 @@ function renderContribution(contrib) {
   const iconUrl = `https://icons.duckduckgo.com/ip3/${iconDomain}.ico`;
   const title = escapeHtml(contrib.title);
   const date = formatDate(contrib.date);
-  const source = escapeHtml(contrib.source);
+  const project = escapeHtml(contrib.project);
 
   return `<li data-ecosystem="${ecosystem}" data-type="${type}">
     <time datetime="${contrib.date}">${date}</time>
     <img class="icon" src="${iconUrl}" alt="" width="16" height="16" />
     <a href="${escapeHtml(contrib.url)}" target="_blank" rel="noopener">${title}</a>
-    <small class="source">${source}</small>
+    <small class="project">${project}</small>
   </li>`;
 }
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Fetch GitHub contributions using the GraphQL API
-// Output: TSV (id, ecosystem, type, date, title, url, source)
+// Output: TSV (id, ecosystem, type, date, title, url, project)
 
 const USERNAME = 'waldyrious';
 const TOKEN = process.env.GITHUB_TOKEN;
@@ -388,7 +388,7 @@ async function main() {
   rows.sort((a, b) => new Date(b[3]) - new Date(a[3]));
 
   // Output TSV
-  console.log(['id', 'ecosystem', 'type', 'date', 'title', 'url', 'source'].join('\t'));
+  console.log(['id', 'ecosystem', 'type', 'date', 'title', 'url', 'project'].join('\t'));
   for (const row of rows) {
     console.log(row.map(escapeField).join('\t'));
   }

@@ -162,7 +162,7 @@ h2 small {
   text-decoration: underline;
 }
 
-.timeline .source {
+.timeline .project {
   color: var(--muted);
   font-size: 0.85em;
   text-align: right;
@@ -200,7 +200,7 @@ footer {
     gap: 0.25rem;
   }
 
-  .timeline .source {
+  .timeline .project {
     text-align: left;
   }
 }
