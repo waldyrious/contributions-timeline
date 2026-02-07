@@ -17,7 +17,22 @@ const WIKIS = [
   // Other wikis
   { id: 'osmwiki', api: 'https://wiki.openstreetmap.org/w/api.php', name: 'OpenStreetMap Wiki', ecosystem: 'osm', username: 'Waldyrious' },
   { id: 'explainxkcd', api: 'https://www.explainxkcd.com/wiki/api.php', name: 'explain xkcd', ecosystem: 'explainxkcd', username: 'Waldir', articleBase: 'https://www.explainxkcd.com/wiki/index.php' },
-  { id: 'fandom-community', api: 'https://community.fandom.com/api.php', name: 'Fandom (Community)', ecosystem: 'fandom', username: 'Waldir' },
+
+  // Fandom
+  { id: 'fandom-community', api: 'https://community.fandom.com/api.php', name: 'Community Central', ecosystem: 'fandom' },
+  { id: 'fandom-ergoproxy', api: 'https://ergoproxy.fandom.com/api.php', name: 'Ergo Proxy Wiki', ecosystem: 'fandom' },
+  { id: 'fandom-impossiblequiz', api: 'https://impossiblequiz.fandom.com/api.php', name: 'The Impossible Quiz Wiki', ecosystem: 'fandom' },
+  { id: 'fandom-expanse', api: 'https://expanse.fandom.com/api.php', name: 'The Expanse Wiki', ecosystem: 'fandom' },
+  { id: 'fandom-thementalist', api: 'https://thementalist.fandom.com/api.php', name: 'The Mentalist Wiki', ecosystem: 'fandom' },
+  { id: 'fandom-graphics', api: 'https://graphics.fandom.com/api.php', name: 'Computer Graphics', ecosystem: 'fandom' },
+  { id: 'fandom-soaps', api: 'https://soaps.fandom.com/api.php', name: 'Soap Opera Wiki', ecosystem: 'fandom' },
+  { id: 'fandom-questionablecontent', api: 'https://questionablecontent.fandom.com/api.php', name: 'Questionable Content Wiki', ecosystem: 'fandom' },
+  { id: 'fandom-community-sitcom', api: 'https://community-sitcom.fandom.com/api.php', name: 'Community Wiki', ecosystem: 'fandom' },
+  { id: 'fandom-sims', api: 'https://sims.fandom.com/api.php', name: 'The Sims Wiki', ecosystem: 'fandom' },
+  { id: 'fandom-gameofthrones', api: 'https://gameofthrones.fandom.com/api.php', name: 'Wiki of Westeros', ecosystem: 'fandom' },
+  { id: 'fandom-criticalmass', api: 'https://criticalmass.fandom.com/api.php', name: 'Critical Mass', ecosystem: 'fandom' },
+  { id: 'fandom-recess', api: 'https://recess.fandom.com/api.php', name: 'Recess Wiki', ecosystem: 'fandom' },
+  { id: 'fandom-memoryalpha', api: 'https://memory-alpha.fandom.com/api.php', name: 'Memory Alpha', ecosystem: 'fandom' },
 ];
 
 const DEFAULT_USERNAME = 'Waldyrious';
