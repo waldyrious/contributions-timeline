@@ -113,7 +113,7 @@ function classifyType(contrib) {
     return 'code';
   }
 
-  return 'other';
+  return 'unknown';
 }
 
 function renderContribution(contrib) {
