@@ -1,5 +1,8 @@
 .DEFAULT_GOAL := site/index.xhtml
 
+# Data fetches depend on remote APIs, so always re-run them
+.PHONY: data/github.tsv data/wikis.tsv data/osm.tsv
+
 # Fetch GitHub data (load .env if it exists)
 data/github.tsv: scripts/fetch-github.js
 	@echo "Fetching GitHub data..."
