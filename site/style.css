@@ -224,8 +224,7 @@ h1 {
 body:has([name="ecosystem"][value="wikimedia"]:not(:checked)) .timeline [data-ecosystem="wikimedia"],
 body:has([name="ecosystem"][value="osm"]:not(:checked)) .timeline [data-ecosystem="osm"],
 body:has([name="ecosystem"][value="github"]:not(:checked)) .timeline [data-ecosystem="github"],
-body:has([name="ecosystem"][value="explainxkcd"]:not(:checked)) .timeline [data-ecosystem="explainxkcd"],
-body:has([name="ecosystem"][value="fandom"]:not(:checked)) .timeline [data-ecosystem="fandom"] {
+body:has([name="ecosystem"][value="otherwikis"]:not(:checked)) .timeline [data-ecosystem="otherwikis"] {
   display: none;
 }
 

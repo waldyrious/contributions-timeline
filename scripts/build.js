@@ -12,16 +12,13 @@ const ECOSYSTEM_ICONS = {
   github: 'github.com',
   wikimedia: 'wikipedia.org',
   osm: 'openstreetmap.org',
-  explainxkcd: 'explainxkcd.com',
-  fandom: 'fandom.com',
 };
 
 const ECOSYSTEMS = {
   wikimedia: { label: 'Wikimedia' },
   osm: { label: 'OpenStreetMap' },
   github: { label: 'GitHub' },
-  explainxkcd: { label: 'explain xkcd' },
-  fandom: { label: 'Fandom' },
+  otherwikis: { label: 'Other wikis' },
 };
 
 const TYPES = {
@@ -120,7 +117,7 @@ function classifyType(contrib) {
 }
 
 function renderContribution(contrib) {
-  const ecosystem = contrib.ecosystem || 'other';
+  const ecosystem = contrib.ecosystem || 'otherwikis';
   const type = classifyType(contrib);
   const typeInfo = TYPES[type] || { icon: '❓' };
   // Use contrib-specific icon if available, otherwise fall back to ecosystem default
@@ -153,7 +150,7 @@ function generateHTML(contributions) {
     if (!byMonth[monthKey]) byMonth[monthKey] = [];
     byMonth[monthKey].push(c);
 
-    const ecosystem = c.ecosystem || 'other';
+    const ecosystem = c.ecosystem || 'otherwikis';
     const type = classifyType(c);
     counts.ecosystem[ecosystem] = (counts.ecosystem[ecosystem] || 0) + 1;
     counts.type[type] = (counts.type[type] || 0) + 1;
