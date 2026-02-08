@@ -43,10 +43,9 @@ async function graphql(query, variables = {}) {
 async function fetchPullRequests(username, limit = 100) {
   console.error('Fetching pull requests...');
   const query = `
-    query($username: String!, $limit: Int!, $cursor: String) {
+    query($username: String!, $limit: Int!) {
       user(login: $username) {
-        pullRequests(first: $limit, after: $cursor, orderBy: {field: CREATED_AT, direction: DESC}) {
-          pageInfo { hasNextPage endCursor }
+        pullRequests(first: $limit, orderBy: {field: CREATED_AT, direction: DESC}) {
           nodes {
             number
             title
@@ -59,42 +58,27 @@ async function fetchPullRequests(username, limit = 100) {
     }
   `;
 
-  const rows = [];
-  let cursor = null;
-  let page = 0;
+  const data = await graphql(query, { username, limit });
+  const prs = data.data?.user?.pullRequests?.nodes || [];
+  console.error(`  Got ${prs.length} PRs`);
 
-  do {
-    const data = await graphql(query, { username, limit, cursor });
-    const prs = data.data?.user?.pullRequests;
-    if (!prs) break;
-
-    for (const pr of prs.nodes) {
-      rows.push([
-        `github-pr-${pr.repository.nameWithOwner}-${pr.number}`,
-        'github',
-        'pr',
-        pr.createdAt,
-        `Opened PR: ${pr.title}`,
-        pr.url,
-        pr.repository.nameWithOwner,
-      ]);
-    }
-
-    cursor = prs.pageInfo.hasNextPage ? prs.pageInfo.endCursor : null;
-    page++;
-    console.error(`  Page ${page}: ${prs.nodes.length} PRs (total: ${rows.length})`);
-  } while (cursor && page < 5); // Limit pages to avoid too many requests
-
-  return rows;
+  return prs.map(pr => [
+    `github-pr-${pr.repository.nameWithOwner}-${pr.number}`,
+    'github',
+    'pr',
+    pr.createdAt,
+    `Opened PR: ${pr.title}`,
+    pr.url,
+    pr.repository.nameWithOwner,
+  ]);
 }
 
 async function fetchIssues(username, limit = 100) {
   console.error('Fetching issues...');
   const query = `
-    query($username: String!, $limit: Int!, $cursor: String) {
+    query($username: String!, $limit: Int!) {
       user(login: $username) {
-        issues(first: $limit, after: $cursor, orderBy: {field: CREATED_AT, direction: DESC}) {
-          pageInfo { hasNextPage endCursor }
+        issues(first: $limit, orderBy: {field: CREATED_AT, direction: DESC}) {
           nodes {
             number
             title
@@ -107,44 +91,28 @@ async function fetchIssues(username, limit = 100) {
     }
   `;
 
-  const rows = [];
-  let cursor = null;
-  let page = 0;
+  const data = await graphql(query, { username, limit });
+  const issues = data.data?.user?.issues?.nodes || [];
+  console.error(`  Got ${issues.length} issues`);
 
-  do {
-    const data = await graphql(query, { username, limit, cursor });
-    const issues = data.data?.user?.issues;
-    if (!issues) break;
-
-    for (const issue of issues.nodes) {
-      rows.push([
-        `github-issue-${issue.repository.nameWithOwner}-${issue.number}`,
-        'github',
-        'issue',
-        issue.createdAt,
-        `Opened issue: ${issue.title}`,
-        issue.url,
-        issue.repository.nameWithOwner,
-      ]);
-    }
-
-    cursor = issues.pageInfo.hasNextPage ? issues.pageInfo.endCursor : null;
-    page++;
-    console.error(`  Page ${page}: ${issues.nodes.length} issues (total: ${rows.length})`);
-  } while (cursor && page < 5);
-
-  return rows;
+  return issues.map(issue => [
+    `github-issue-${issue.repository.nameWithOwner}-${issue.number}`,
+    'github',
+    'issue',
+    issue.createdAt,
+    `Opened issue: ${issue.title}`,
+    issue.url,
+    issue.repository.nameWithOwner,
+  ]);
 }
 
 async function fetchPullRequestReviews(username, limit = 100) {
   console.error('Fetching PR reviews...');
-  // Use contributionsCollection to get reviews
   const query = `
-    query($username: String!, $limit: Int!, $cursor: String) {
+    query($username: String!, $limit: Int!) {
       user(login: $username) {
         contributionsCollection {
-          pullRequestReviewContributions(first: $limit, after: $cursor) {
-            pageInfo { hasNextPage endCursor }
+          pullRequestReviewContributions(first: $limit) {
             nodes {
               occurredAt
               pullRequestReview {
@@ -162,20 +130,16 @@ async function fetchPullRequestReviews(username, limit = 100) {
     }
   `;
 
-  const rows = [];
-  let cursor = null;
-  let page = 0;
+  const data = await graphql(query, { username, limit });
+  const contribs = data.data?.user?.contributionsCollection?.pullRequestReviewContributions?.nodes || [];
+  console.error(`  Got ${contribs.length} reviews`);
 
-  do {
-    const data = await graphql(query, { username, limit, cursor });
-    const reviews = data.data?.user?.contributionsCollection?.pullRequestReviewContributions;
-    if (!reviews) break;
-
-    for (const contrib of reviews.nodes) {
+  return contribs
+    .filter(contrib => contrib.pullRequestReview)
+    .map(contrib => {
       const review = contrib.pullRequestReview;
-      if (!review) continue;
       const pr = review.pullRequest;
-      rows.push([
+      return [
         `github-review-${pr.repository.nameWithOwner}-${pr.number}-${contrib.occurredAt}`,
         'github',
         'review',
@@ -183,24 +147,16 @@ async function fetchPullRequestReviews(username, limit = 100) {
         `Reviewed PR: ${pr.title}`,
         review.url,
         pr.repository.nameWithOwner,
-      ]);
-    }
-
-    cursor = reviews.pageInfo.hasNextPage ? reviews.pageInfo.endCursor : null;
-    page++;
-    console.error(`  Page ${page}: ${reviews.nodes.length} reviews (total: ${rows.length})`);
-  } while (cursor && page < 5);
-
-  return rows;
+      ];
+    });
 }
 
 async function fetchIssueComments(username, limit = 100) {
   console.error('Fetching issue comments...');
   const query = `
-    query($username: String!, $limit: Int!, $cursor: String) {
+    query($username: String!, $limit: Int!) {
       user(login: $username) {
-        issueComments(first: $limit, after: $cursor, orderBy: {field: UPDATED_AT, direction: DESC}) {
-          pageInfo { hasNextPage endCursor }
+        issueComments(first: $limit, orderBy: {field: UPDATED_AT, direction: DESC}) {
           nodes {
             id
             url
@@ -216,42 +172,27 @@ async function fetchIssueComments(username, limit = 100) {
     }
   `;
 
-  const rows = [];
-  let cursor = null;
-  let page = 0;
+  const data = await graphql(query, { username, limit });
+  const comments = data.data?.user?.issueComments?.nodes || [];
+  console.error(`  Got ${comments.length} comments`);
 
-  do {
-    const data = await graphql(query, { username, limit, cursor });
-    const comments = data.data?.user?.issueComments;
-    if (!comments) break;
-
-    for (const comment of comments.nodes) {
-      const issue = comment.issue;
-      rows.push([
-        `github-comment-${comment.id}`,
-        'github',
-        'comment',
-        comment.createdAt,
-        `Commented on: ${issue.title}`,
-        comment.url,
-        issue.repository.nameWithOwner,
-      ]);
-    }
-
-    cursor = comments.pageInfo.hasNextPage ? comments.pageInfo.endCursor : null;
-    page++;
-    console.error(`  Page ${page}: ${comments.nodes.length} comments (total: ${rows.length})`);
-  } while (cursor && page < 3); // Fewer pages for comments (there can be many)
-
-  return rows;
+  return comments.map(comment => [
+    `github-comment-${comment.id}`,
+    'github',
+    'comment',
+    comment.createdAt,
+    `Commented on: ${comment.issue.title}`,
+    comment.url,
+    comment.issue.repository.nameWithOwner,
+  ]);
 }
 
-async function fetchCommits(username, limit = 10) {
+async function fetchCommits(username, limit = 20) {
   console.error('Fetching recent commits...');
-  
+
   const rows = [];
-  
-  // Get recently pushed repos first
+
+  // Get recently pushed repos and user ID
   const repoQuery = `
     query($username: String!) {
       user(login: $username) {
@@ -262,18 +203,18 @@ async function fetchCommits(username, limit = 10) {
       }
     }
   `;
-  
+
   const repoData = await graphql(repoQuery, { username });
   const userId = repoData.data?.user?.id;
-  const repoNames = repoData.data?.user?.repositories?.nodes?.map(r => r.nameWithOwner) || [];
-  
+  const repoNames = repoData.data?.user?.repositories?.nodes?.map(repo => repo.nameWithOwner) || [];
+
   if (!userId || repoNames.length === 0) {
     console.error('  Could not get user data');
     return [];
   }
-  
-  // Fetch commits from each repo individually (more reliable)
-  for (const repoFullName of repoNames.slice(0, 5)) { // Limit to 5 repos
+
+  // Fetch recent commits from each repo
+  for (const repoFullName of repoNames.slice(0, 10)) { // Limit to 10 repos
     const [owner, name] = repoFullName.split('/');
     const commitQuery = `
       query($owner: String!, $name: String!, $authorId: ID!, $limit: Int!) {
@@ -295,10 +236,10 @@ async function fetchCommits(username, limit = 10) {
         }
       }
     `;
-    
+
     const data = await graphql(commitQuery, { owner, name, authorId: userId, limit });
     const commits = data.data?.repository?.defaultBranchRef?.target?.history?.nodes || [];
-    
+
     for (const commit of commits) {
       rows.push([
         `github-commit-${commit.oid.slice(0, 7)}`,
@@ -310,7 +251,7 @@ async function fetchCommits(username, limit = 10) {
         repoFullName,
       ]);
     }
-    
+
     if (commits.length > 0) {
       console.error(`  ${repoFullName}: ${commits.length} commits`);
     }
@@ -323,10 +264,9 @@ async function fetchCommits(username, limit = 10) {
 async function fetchRepositoriesCreated(username, limit = 100) {
   console.error('Fetching repositories created...');
   const query = `
-    query($username: String!, $limit: Int!, $cursor: String) {
+    query($username: String!, $limit: Int!) {
       user(login: $username) {
-        repositories(first: $limit, after: $cursor, ownerAffiliations: OWNER, orderBy: {field: CREATED_AT, direction: DESC}) {
-          pageInfo { hasNextPage endCursor }
+        repositories(first: $limit, ownerAffiliations: OWNER, orderBy: {field: CREATED_AT, direction: DESC}) {
           nodes {
             name
             nameWithOwner
@@ -339,34 +279,20 @@ async function fetchRepositoriesCreated(username, limit = 100) {
     }
   `;
 
-  const rows = [];
-  let cursor = null;
-  let page = 0;
+  const data = await graphql(query, { username, limit });
+  const repos = data.data?.user?.repositories?.nodes || [];
+  const nonForks = repos.filter(repo => !repo.isFork);
+  console.error(`  Got ${nonForks.length} repos (${repos.length - nonForks.length} forks skipped)`);
 
-  do {
-    const data = await graphql(query, { username, limit, cursor });
-    const repos = data.data?.user?.repositories;
-    if (!repos) break;
-
-    for (const repo of repos.nodes) {
-      if (repo.isFork) continue; // Skip forks
-      rows.push([
-        `github-repo-${repo.nameWithOwner}`,
-        'github',
-        'repo',
-        repo.createdAt,
-        `Created repository: ${repo.name}`,
-        repo.url,
-        repo.nameWithOwner,
-      ]);
-    }
-
-    cursor = repos.pageInfo.hasNextPage ? repos.pageInfo.endCursor : null;
-    page++;
-    console.error(`  Page ${page}: ${repos.nodes.length} repos (total: ${rows.length})`);
-  } while (cursor && page < 5);
-
-  return rows;
+  return nonForks.map(repo => [
+    `github-repo-${repo.nameWithOwner}`,
+    'github',
+    'repo',
+    repo.createdAt,
+    `Created repository: ${repo.name}`,
+    repo.url,
+    repo.nameWithOwner,
+  ]);
 }
 
 function escapeField(str) {
