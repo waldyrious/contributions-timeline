@@ -92,28 +92,34 @@ function loadTSV(filename) {
   });
 }
 
-function classifyType(contrib) {
+// Classify a wiki edit based on its page title
+function classifyWikiEdit(contrib) {
+  const LANG_SUBPAGE = /\/[a-z]{2,3}(-[a-z0-9]{2,6})?$/;
+  const DOC_SUBPAGE = /\/(doc(umentation)?|qqq)$/i;
+  const CODE_PAGE = /^(Template|Module|MediaWiki):|\.(css|js|json)$/;
+  const TALK_PAGE = /([ _]|^)[Tt]alk:/;
+
   const title = contrib.title || '';
-  const isTalk = /([ _]|^)[Tt]alk:/.test(title);
 
-  if (contrib.type === 'changeset') {
-    return 'map';
-  } else if (isTalk) {
-    return 'talk';
-  } else if (contrib.project === 'translatewiki.net') {
-    return 'i18n';
-  } else if (['edit'].includes(contrib.type)) {
-    return 'wiki';
-  } else if (['commit', 'pr', 'repo'].includes(contrib.type)) {
-    return 'code';
-  } else if (['review', 'issue', 'comment'].includes(contrib.type)) {
-    return 'talk';
-  } else if (contrib.ecosystem === 'github') {
-    // Fallback for other GitHub events not explicitly handled
-    return 'code';
+  if (title.match(TALK_PAGE)) return 'talk';
+  if (contrib.project === 'translatewiki.net') {
+    if (title.match(LANG_SUBPAGE) && !(title.match(DOC_SUBPAGE))) return 'i18n';
   }
+  if (title.match(CODE_PAGE) && !(title.match(DOC_SUBPAGE))) return 'code';
+  return 'wiki';
+}
 
-  return 'unknown';
+function classifyType(contrib) {
+  switch (contrib.ecosystem) {
+    case 'github':
+      return contrib.type.match(/review|issue|comment/) ? 'talk' : 'code';
+
+    case 'osm':
+      return contrib.type === 'changeset' ? 'map' : classifyWikiEdit(contrib);
+
+    default: // assume the remaining contributions are wikis
+      return classifyWikiEdit(contrib);
+  }
 }
 
 function renderContribution(contrib) {
