@@ -23,10 +23,12 @@ function main() {
   const github = loadTSV('github.tsv');
   const wikis = loadTSV('wikis.tsv');
   const osm = loadTSV('osm.tsv');
+  const setiquest = loadTSV('setiquest.tsv');
+  const tvtropes = loadTSV('tvtropes.tsv');
 
-  console.error(`Loaded: ${github.length} GitHub, ${wikis.length} Wikis, ${osm.length} OSM`);
+  console.error(`Loaded: ${github.length} GitHub, ${wikis.length} Wikis, ${osm.length} OSM, ${setiquest.length} SETIQuest, ${tvtropes.length} TVTropes`);
 
-  const all = [...github, ...wikis, ...osm];
+  const all = [...github, ...wikis, ...osm, ...setiquest, ...tvtropes];
 
   // Sort by date descending (date is column 3)
   all.sort((a, b) => new Date(b[3]) - new Date(a[3]));

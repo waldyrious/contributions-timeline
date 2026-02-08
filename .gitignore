@@ -1,5 +1,9 @@
 # Data files are regenerated on each build
 data/*.tsv
+# Exception: static data files that are committed to the repo
+# (from sources without a usable API)
+!data/setiquest.tsv
+!data/tvtropes.tsv
 
 # Generated site
 site/index.xhtml

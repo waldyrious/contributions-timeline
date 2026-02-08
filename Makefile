@@ -20,7 +20,7 @@ data/osm.tsv: scripts/fetch-osm.js
 	node scripts/fetch-osm.js > data/osm.tsv
 
 # Build the combined timeline, which depends on the individual data files and the merge script
-data/timeline.tsv: data/github.tsv data/wikis.tsv data/osm.tsv scripts/merge.js
+data/timeline.tsv: data/github.tsv data/wikis.tsv data/osm.tsv data/setiquest.tsv data/tvtropes.tsv scripts/merge.js
 	@echo "Merging timeline data..."
 	node scripts/merge.js > data/timeline.tsv
 
