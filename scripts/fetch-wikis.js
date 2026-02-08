@@ -38,7 +38,7 @@ const WIKIS = [
 
 const DEFAULT_USERNAME = 'Waldyrious';
 
-async function fetchContribs(wiki, limit = 50) {
+async function fetchContribs(wiki, { limit = 500, quiet = false } = {}) {
   const username = wiki.username || DEFAULT_USERNAME;
   const params = new URLSearchParams({
     action: 'query',
@@ -51,7 +51,7 @@ async function fetchContribs(wiki, limit = 50) {
   });
 
   const url = `${wiki.api}?${params}`;
-  console.error(`Fetching ${wiki.name} as ${username}...`);
+  if (!quiet) console.error(`Fetching ${wiki.name} as ${username}...`);
 
   try {
     const res = await fetch(url);
@@ -91,12 +91,23 @@ function escapeField(str) {
 
 async function main() {
   const rows = [];
+  const fandomWikis = WIKIS.filter(w => w.id.startsWith('fandom-'));
+  const otherWikis = WIKIS.filter(w => !w.id.startsWith('fandom-'));
 
-  for (const wiki of WIKIS) {
+  for (const wiki of otherWikis) {
     const contribs = await fetchContribs(wiki);
     rows.push(...contribs);
     console.error(`  Got ${contribs.length} edits`);
   }
+
+  console.error(`Fetching Fandom wikis as ${DEFAULT_USERNAME}...`);
+  let fandomCount = 0;
+  for (const wiki of fandomWikis) {
+    const contribs = await fetchContribs(wiki, { quiet: true });
+    rows.push(...contribs);
+    fandomCount += contribs.length;
+  }
+  console.error(`  Got ${fandomCount} edits across ${fandomWikis.length} wikis`);
 
   // Sort by date descending
   rows.sort((a, b) => new Date(b[3]) - new Date(a[3]));

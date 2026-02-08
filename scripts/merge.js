@@ -26,7 +26,7 @@ function main() {
   const setiquest = loadTSV('setiquest.tsv');
   const tvtropes = loadTSV('tvtropes.tsv');
 
-  console.error(`Loaded: ${github.length} GitHub, ${wikis.length} Wikis, ${osm.length} OSM, ${setiquest.length} SETIQuest, ${tvtropes.length} TVTropes`);
+  console.error(`Loaded: ${github.length} from GitHub, ${wikis.length} from wikis, ${osm.length} from OSM, ${setiquest.length} from SETIQuest, ${tvtropes.length} from TVTropes`);
 
   const all = [...github, ...wikis, ...osm, ...setiquest, ...tvtropes];
 
